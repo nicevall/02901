@@ -1,9 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const { registrarUsuario, iniciarSesion, actualizarUsuario, obtenerPerfil } = require('../controllers/usuarios.controller');
+const { registrarUsuario, iniciarSesion, actualizarUsuario, obtenerPerfil, verificarCorreo } = require('../controllers/usuarios.controller');
 const auth =  require('../middlewares/auth');
 
 router.post('/registrar', registrarUsuario);
+
+router.post('/verificar-correo', verificarCorreo);
 
 router.post('/login', iniciarSesion);
 

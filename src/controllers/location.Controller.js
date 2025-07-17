@@ -37,7 +37,7 @@ exports.updateUserLocation = async (req, res) => {
     let rango = GEOFENCE_RADIUS;
 
     if (eventoId) {
-      const evento = await Evento.findById(eventoId);
+      const evento = await Evento.findOne({ _id: eventoId, activo: true });
       if (evento) {
         lat = evento.ubicacion.latitud;
         lon = evento.ubicacion.longitud;

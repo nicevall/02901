@@ -2,6 +2,7 @@ const Usuario = require('../models/Model.user');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { incrementMetric } = require("../utils/dashboard.metrics");
+const { enviarCorreo } = require('../utils/email.util');
 
 // Registro de usuario
 exports.registrarUsuario = async (req, res) => {
@@ -20,17 +21,27 @@ exports.registrarUsuario = async (req, res) => {
 
     const hashed = await bcrypt.hash(contrasena, 10);
 
+    const codigo = Math.floor(100000 + Math.random() * 900000).toString();
+    const hashedCode = await bcrypt.hash(codigo, 10);
+
     const nuevoUsuario = new Usuario({
       nombre,
       correo,
       contrasena: hashed,
-      rol
+      rol,
+      codigoVerificacion: hashedCode,
+      codigoVerificacionExpira: new Date(Date.now() + 60 * 60 * 1000),
     });
 
     await nuevoUsuario.save();
+    await enviarCorreo(
+      correo,
+      'Código de verificación',
+      `Tu código de verificación es: ${codigo}`
+    );
     await incrementMetric("usuarios");
 
-    res.status(201).json({ mensaje: '✅ Usuario registrado correctamente' });
+    res.status(201).json({ mensaje: '✅ Usuario registrado. Revisa tu correo para verificarlo.' });
   } catch (err) {
     console.error('[Registro] Error:', err);
     res.status(500).json({ error: 'Error al registrar el usuario' });
@@ -178,6 +189,40 @@ exports.obtenerPerfil = async (req, res) => {
       ok: false,
       mensaje: 'Error al obtener el perfil del usuario',
     });
+  }
+};
+
+// Verificar correo electrónico
+exports.verificarCorreo = async (req, res) => {
+  try {
+    const { correo, codigo } = req.body;
+    const usuario = await Usuario.findOne({ correo });
+    if (!usuario) {
+      return res.status(404).json({ ok: false, mensaje: 'Usuario no encontrado' });
+    }
+    console.log('[Verificación] Código recibido:', codigo);
+    if (usuario.correoVerificado) {
+      return res.status(400).json({ ok: false, mensaje: 'El correo ya está verificado' });
+    }
+    if (!usuario.codigoVerificacion || !usuario.codigoVerificacionExpira) {
+      return res.status(400).json({ ok: false, mensaje: 'No hay código de verificación' });
+    }
+    if (usuario.codigoVerificacionExpira < new Date()) {
+      return res.status(400).json({ ok: false, mensaje: 'El código expiró' });
+    }
+    const esValido = await bcrypt.compare(codigo, usuario.codigoVerificacion);
+    if (!esValido) {
+      return res.status(400).json({ ok: false, mensaje: 'Código inválido' });
+    }
+    usuario.correoVerificado = true;
+    usuario.codigoVerificacion = undefined;
+    usuario.codigoVerificacionExpira = undefined;
+    await usuario.save();
+
+    return res.status(200).json({ ok: true, mensaje: 'Correo verificado correctamente' });
+  } catch (error) {
+    console.error('[VerificarCorreo] Error:', error);
+    return res.status(500).json({ ok: false, mensaje: 'Error al verificar el correo' });
   }
 };
 

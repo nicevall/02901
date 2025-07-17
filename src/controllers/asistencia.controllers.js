@@ -8,7 +8,7 @@ exports.registrarAsistencia = async (req, res) => {
 
   try {
     // Buscar evento
-    const evento = await Evento.findById(eventoId);
+    const evento = await Evento.findOne({ _id: eventoId, activo: true });
     if (!evento) {
       return res.status(404).json({ mensaje: 'Evento no encontrado' });
     }

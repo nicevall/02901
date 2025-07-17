@@ -37,6 +37,10 @@ const eventoSchema = new mongoose.Schema({
     default: 100,
     min: [0, 'El rango permitido no puede ser negativo']
   },
+  activo: {
+    type: Boolean,
+    default: true
+  },
   creadoPor: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',

@@ -8,10 +8,13 @@ exports.crearEvento = async (req, res) => {
       titulo,
       descripcion,
       ubicacion,
-      fechaInicio,
-      fechaFin,
+      fecha,
+      horaInicio,
+      horaFinal,
+      activo,
       rangoPermitido
     } = req.body;
+
 
     // Validación básica
     if (!titulo || !ubicacion?.latitud || !ubicacion?.longitud || !fechaInicio || !fechaFin) {
@@ -51,7 +54,7 @@ exports.crearEvento = async (req, res) => {
 // Obtener todos los eventos
 exports.obtenerEventos = async (req, res) => {
   try {
-    const eventos = await Evento.find().populate('creadoPor', 'nombre email rol');
+    const eventos = await Evento.find({ activo: true }).populate('creadoPor', 'nombre email rol');
     res.status(200).json(eventos);
   } catch (err) {
     console.error('Error al obtener eventos:', err); // imprime el error completo en consola
@@ -67,7 +70,7 @@ exports.obtenerEventos = async (req, res) => {
 // Obtener evento por ID
 exports.obtenerEventoPorId = async (req, res) => {
   try {
-    const evento = await Evento.findById(req.params.id).populate('creadoPor', 'nombre email');
+    const evento = await Evento.findOne({ _id: req.params.id, activo: true }).populate('creadoPor', 'nombre email');
     if (!evento) return res.status(404).json({ mensaje: 'Evento no encontrado' });
     res.status(200).json(evento);
   } catch (err) {
@@ -79,7 +82,7 @@ exports.obtenerEventoPorId = async (req, res) => {
 exports.actualizarEvento = async (req, res) => {
   try {
     const evento = await Evento.findById(req.params.id);
-    if (!evento) {
+    if (!evento || !evento.activo) {
       return res.status(404).json({ mensaje: 'Evento no encontrado' });
     }
 
@@ -119,13 +122,14 @@ exports.actualizarEvento = async (req, res) => {
 exports.eliminarEvento = async (req, res) => {
   try {
     const evento = await Evento.findById(req.params.id);
-    if (!evento) return res.status(404).json({ mensaje: 'Evento no encontrado' });
+    if (!evento || !evento.activo) return res.status(404).json({ mensaje: 'Evento no encontrado' });
 
     if (evento.creadoPor.toString() !== req.user.id && req.user.rol !== 'admin', 'docente') {
       return res.status(403).json({ mensaje: 'No tienes permiso para eliminar este evento' });
     }
 
-    await evento.deleteOne();
+    evento.activo = false;
+    await evento.save();
     await incrementMetric("eventos", -1);
     res.status(200).json({ mensaje: 'Evento eliminado correctamente' });
   } catch (err) {
