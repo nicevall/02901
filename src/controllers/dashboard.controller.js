@@ -1,5 +1,6 @@
 const Dashboard = require('../models/dashboard.model');
 const { broadcast } = require('../config/websocket');
+const EventMetric = require('../models/eventMetric.model');
 
 exports.getMetrics = async (req, res) => {
   try {
@@ -25,5 +26,14 @@ exports.updateMetric = async (req, res) => {
     res.json(data);
   } catch (err) {
     res.status(500).json({ error: 'Error al actualizar metrica', message: err.message });
+  }
+};
+
+exports.getEventMetrics = async (req, res) => {
+  try {
+    const metrics = await EventMetric.findOne({ evento: req.params.id }).lean();
+    res.json(metrics || {});
+  } catch (err) {
+    res.status(500).json({ error: 'Error al obtener metricas de evento', message: err.message });
   }
 };

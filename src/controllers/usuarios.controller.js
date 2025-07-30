@@ -1,7 +1,8 @@
 const Usuario = require('../models/Model.user');
+const PendingUser = require('../models/pendingUser.model');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { incrementMetric } = require("../utils/dashboard.metrics");
+const { incrementMetric } = require('../utils/dashboard.metrics');
 const { enviarCorreo } = require('../utils/email.util');
 
 // Registro de usuario
@@ -13,9 +14,10 @@ exports.registrarUsuario = async (req, res) => {
       return res.status(400).json({ error: 'Todos los campos son obligatorios' });
     }
 
-    // Verifica si ya existe
+    // Verifica si ya existe en usuarios o pendientes
     const usuarioExistente = await Usuario.findOne({ correo });
-    if (usuarioExistente) {
+    const pendienteExistente = await PendingUser.findOne({ correo });
+    if (usuarioExistente || pendienteExistente) {
       return res.status(409).json({ error: 'Ya existe un usuario con ese correo' });
     }
 
@@ -24,23 +26,20 @@ exports.registrarUsuario = async (req, res) => {
     const codigo = Math.floor(100000 + Math.random() * 900000).toString();
     const hashedCode = await bcrypt.hash(codigo, 10);
 
-    const nuevoUsuario = new Usuario({
+    const nuevoPendiente = new PendingUser({
       nombre,
       correo,
       contrasena: hashed,
       rol,
       codigoVerificacion: hashedCode,
-      codigoVerificacionExpira: new Date(Date.now() + 60 * 60 * 1000),
     });
 
-    await nuevoUsuario.save();
+    await nuevoPendiente.save();
     await enviarCorreo(
       correo,
       'Código de verificación',
       `Tu código de verificación es: ${codigo}`
     );
-    await incrementMetric("usuarios");
-
     res.status(201).json({ mensaje: '✅ Usuario registrado. Revisa tu correo para verificarlo.' });
   } catch (err) {
     console.error('[Registro] Error:', err);
@@ -116,6 +115,12 @@ exports.iniciarSesion = async (req, res) => {
       return res.status(401).json({
         ok: false,
         mensaje: 'Credenciales inválidas',
+      });
+    }
+    if (!usuario.correoVerificado) {
+      return res.status(401).json({
+        ok: false,
+        mensaje: 'Debe verificar su correo antes de iniciar sesión',
       });
     }
 
@@ -196,28 +201,25 @@ exports.obtenerPerfil = async (req, res) => {
 exports.verificarCorreo = async (req, res) => {
   try {
     const { correo, codigo } = req.body;
-    const usuario = await Usuario.findOne({ correo });
-    if (!usuario) {
-      return res.status(404).json({ ok: false, mensaje: 'Usuario no encontrado' });
+    const pendiente = await PendingUser.findOne({ correo });
+    if (!pendiente) {
+      return res.status(404).json({ ok: false, mensaje: 'Registro pendiente no encontrado o expirado' });
     }
-    console.log('[Verificación] Código recibido:', codigo);
-    if (usuario.correoVerificado) {
-      return res.status(400).json({ ok: false, mensaje: 'El correo ya está verificado' });
-    }
-    if (!usuario.codigoVerificacion || !usuario.codigoVerificacionExpira) {
-      return res.status(400).json({ ok: false, mensaje: 'No hay código de verificación' });
-    }
-    if (usuario.codigoVerificacionExpira < new Date()) {
-      return res.status(400).json({ ok: false, mensaje: 'El código expiró' });
-    }
-    const esValido = await bcrypt.compare(codigo, usuario.codigoVerificacion);
+    const esValido = await bcrypt.compare(codigo, pendiente.codigoVerificacion);
     if (!esValido) {
       return res.status(400).json({ ok: false, mensaje: 'Código inválido' });
     }
-    usuario.correoVerificado = true;
-    usuario.codigoVerificacion = undefined;
-    usuario.codigoVerificacionExpira = undefined;
-    await usuario.save();
+
+    const nuevoUsuario = new Usuario({
+      nombre: pendiente.nombre,
+      correo: pendiente.correo,
+      contrasena: pendiente.contrasena,
+      rol: pendiente.rol,
+      correoVerificado: true,
+    });
+    await nuevoUsuario.save();
+    await incrementMetric('usuarios');
+    await PendingUser.deleteOne({ _id: pendiente._id });
 
     return res.status(200).json({ ok: true, mensaje: 'Correo verificado correctamente' });
   } catch (error) {

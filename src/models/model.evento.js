@@ -1,51 +1,67 @@
 const mongoose = require('mongoose');
 
 const eventoSchema = new mongoose.Schema({
-  titulo: {
+  nombre: {
     type: String,
-    required: [true, 'El título es obligatorio'],
+    required: [true, 'El nombre es obligatorio'],
     trim: true
   },
-  descripcion: {
+  tipo: {
     type: String,
-    trim: true
+    enum: ['seminario', 'clase', 'conferencia'],
+    required: [true, 'El tipo de evento es obligatorio']
   },
-  ubicacion: {
-    latitud: {
-      type: Number,
-      required: [true, 'La latitud es obligatoria']
-    },
-    longitud: {
-      type: Number,
-      required: [true, 'La longitud es obligatoria']
-    }
-  },
-  fecha: {
+  fechaInicio: {
     type: Date,
-    required: [true, 'La fecha es obligatoria']
+  },
+  fechaFin: {
+    type: Date,
+  },
+  duracionDias: {
+    type: Number,
+    default: 1
   },
   horaInicio: {
-    type: Date,
-    required: [true, 'La hora de inicio es obligatoria']
+    type: String,
   },
-  horaFinal: {
-    type: Date,
-    required: [true, 'La hora de finalización es obligatoria']
+  horaFin: {
+    type: String,
   },
-  rangoPermitido: {
+  duracionHoras: {
     type: Number,
-    default: 100,
-    min: [0, 'El rango permitido no puede ser negativo']
+    default: 1
   },
-  activo: {
-    type: Boolean,
-    default: true
+  lugar: {
+    type: String,
+    required: [true, 'El lugar es obligatorio']
   },
-  creadoPor: {
+  descripcion: String,
+  capacidadMaxima: Number,
+  creadorId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Usuario',
     required: [true, 'El creador del evento es obligatorio']
-  }
+  },
+  coordenadas: {
+    latitud: { type: Number, required: true },
+    longitud: { type: Number, required: true },
+    radio: { type: Number, default: 100 }
+  },
+  politicasAsistencia: {
+    tiempoGracia: { type: Number, default: 5 },
+    maximoSalidas: { type: Number, default: 2 },
+    tiempoLimiteSalida: { type: Number, default: 15 },
+    verificacionContinua: { type: Boolean, default: false },
+    requiereJustificacion: { type: Boolean, default: true }
+  },
+  estado: {
+    type: String,
+    enum: ['activo', 'finalizado', 'cancelado'],
+    default: 'activo'
+  },
+  reportePDF: { type: String },
+  participantesRegistrados: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Usuario' }],
+  fechaCreacion: { type: Date, default: Date.now }
 }, {
   timestamps: true
 });

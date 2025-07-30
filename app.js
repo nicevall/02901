@@ -12,8 +12,9 @@ const cors = require('cors');
 const eventoRoutes = require('./src/routes/eventos.routes');
 const usuarioRoutes = require('./src/routes/usuarios.routes');
 const asistenciaRoutes = require('./src/routes/asistencia.routes');
-const locationRoutes = require('./src/routes/locationRoutes');
+const locationRoutes = require('./src/routes/location.routes');
 const dashboardRoutes = require('./src/routes/dashboard.routes');
+const justificacionRoutes = require('./src/routes/justificaciones.routes');
 require('./src/cron/asistenciaCron');
 
 const { initWebSocket } = require('./src/config/websocket');
@@ -51,6 +52,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // 📌 Rutas API
 app.use('/api/usuarios', usuarioRoutes);
@@ -58,6 +60,7 @@ app.use('/api/eventos', eventoRoutes);
 app.use('/api/asistencia', asistenciaRoutes);
 app.use('/api/location', locationRoutes);
 app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/justificaciones', justificacionRoutes);
 
 
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(SwaggerDocumentation));

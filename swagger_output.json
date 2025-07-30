@@ -54,6 +54,42 @@
         }
       }
     },
+    "/api/usuarios/verificar-correo": {
+      "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "correo": {
+                  "example": "any"
+                },
+                "codigo": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
     "/api/usuarios/login": {
       "post": {
         "description": "",
@@ -188,25 +224,43 @@
             "schema": {
               "type": "object",
               "properties": {
-                "titulo": {
+                "nombre": {
                   "example": "any"
                 },
-                "descripcion": {
+                "tipo": {
                   "example": "any"
                 },
-                "ubicacion": {
+                "fechaInicio": {
                   "example": "any"
                 },
-                "fecha": {
+                "fechaFin": {
+                  "example": "any"
+                },
+                "duracionDias": {
                   "example": "any"
                 },
                 "horaInicio": {
                   "example": "any"
                 },
-                "horaFinal": {
+                "horaFin": {
                   "example": "any"
                 },
-                "activo": {
+                "duracionHoras": {
+                  "example": "any"
+                },
+                "lugar": {
+                  "example": "any"
+                },
+                "descripcion": {
+                  "example": "any"
+                },
+                "capacidadMaxima": {
+                  "example": "any"
+                },
+                "coordenadas": {
+                  "example": "any"
+                },
+                "politicasAsistencia": {
                   "example": "any"
                 }
               }
@@ -288,13 +342,10 @@
             "schema": {
               "type": "object",
               "properties": {
-                "titulo": {
+                "nombre": {
                   "example": "any"
                 },
-                "descripcion": {
-                  "example": "any"
-                },
-                "ubicacion": {
+                "tipo": {
                   "example": "any"
                 },
                 "fechaInicio": {
@@ -303,7 +354,34 @@
                 "fechaFin": {
                   "example": "any"
                 },
-                "rangoPermitido": {
+                "duracionDias": {
+                  "example": "any"
+                },
+                "horaInicio": {
+                  "example": "any"
+                },
+                "horaFin": {
+                  "example": "any"
+                },
+                "duracionHoras": {
+                  "example": "any"
+                },
+                "lugar": {
+                  "example": "any"
+                },
+                "descripcion": {
+                  "example": "any"
+                },
+                "capacidadMaxima": {
+                  "example": "any"
+                },
+                "coordenadas": {
+                  "example": "any"
+                },
+                "politicasAsistencia": {
+                  "example": "any"
+                },
+                "estado": {
                   "example": "any"
                 }
               }
@@ -329,6 +407,41 @@
         }
       },
       "delete": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/eventos/{id}/finalizar": {
+      "post": {
         "description": "",
         "parameters": [
           {
@@ -509,6 +622,304 @@
           },
           "400": {
             "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/dashboard/metrics/event/{id}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/justificaciones/crear": {
+      "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "eventoId": {
+                  "example": "any"
+                },
+                "motivo": {
+                  "example": "any"
+                },
+                "descripcion": {
+                  "example": "any"
+                },
+                "documentos": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/justificaciones/pendientes/{docenteId}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "docenteId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/justificaciones/{id}/aprobar": {
+      "put": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comentario": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/justificaciones/{id}/rechazar": {
+      "put": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "body",
+            "in": "body",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "comentario": {
+                  "example": "any"
+                }
+              }
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/justificaciones/estudiante/{id}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/justificaciones/subir-documento": {
+      "post": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          }
+        }
+      }
+    },
+    "/api/justificaciones/historial/{eventoId}": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "eventoId",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
           },
           "401": {
             "description": "Unauthorized"
