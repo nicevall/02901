@@ -234,3 +234,17 @@ exports.finalizarEvento = async (req, res) => {
     res.status(500).json({ mensaje: 'Error al finalizar evento', error: err.message });
   }
 };
+
+// Obtener eventos creados por el docente/admin
+exports.obtenerMisEventos = async (req, res) => {
+  try {
+    const { estado } = req.query;
+    const filtro = { creadorId: req.user.id };
+    if (estado) filtro.estado = estado;
+
+    const eventos = await Evento.find(filtro).populate('creadorId', 'nombre email rol');
+    res.status(200).json(eventos);
+  } catch (err) {
+    res.status(500).json({ mensaje: 'Error al obtener mis eventos', error: err.message });
+  }
+};

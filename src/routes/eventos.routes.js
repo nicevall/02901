@@ -7,12 +7,14 @@ const {
   obtenerEventos,
   obtenerEventoPorId,
   eliminarEvento,
-  finalizarEvento
+  finalizarEvento,
+  obtenerMisEventos
 } = require('../controllers/evento.controller');
 const authMiddleware = require('../middlewares/auth');
 
 router.post('/crear', authMiddleware(['docente', 'admin']), crearEvento);
 
+router.get('/mis', authMiddleware(['docente', 'admin']), obtenerMisEventos);
 router.get('/', obtenerEventos);
 router.get('/:id', obtenerEventoPorId);
 
