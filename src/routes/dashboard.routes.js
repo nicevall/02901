@@ -7,7 +7,9 @@ const auth = require('../middlewares/auth');
 router.get('/metrics', auth(['admin','docente']), controller.getMetrics);
 // Actualizar o crear una metrica
 router.post('/metrics', auth(['admin','docente']), controller.updateMetric);
+
 router.get('/metrics/event/:id', auth(['admin','docente']), controller.getEventMetrics);
+
 router.get('/overview', auth(['admin','docente']), controller.getDashboardOverview);
 
 module.exports = router;

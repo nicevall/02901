@@ -209,6 +209,37 @@
         }
       }
     },
+    "/api/eventos/mis": {
+      "get": {
+        "description": "",
+        "parameters": [
+          {
+            "name": "Authorization",
+            "in": "header",
+            "type": "string"
+          },
+          {
+            "name": "estado",
+            "in": "query",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
     "/api/eventos/crear": {
       "post": {
         "description": "",
@@ -635,24 +666,6 @@
         }
       }
     },
-    "/api/dashboard/overview": {
-      "get": {
-        "description": "",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": { "description": "OK" },
-          "401": { "description": "Unauthorized" },
-          "403": { "description": "Forbidden" },
-          "500": { "description": "Internal Server Error" }
-        }
-      }
-    },
     "/api/dashboard/metrics/event/{id}": {
       "get": {
         "description": "",
@@ -663,6 +676,32 @@
             "required": true,
             "type": "string"
           },
+          {
+            "name": "Authorization",
+            "in": "header",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        }
+      }
+    },
+    "/api/dashboard/overview": {
+      "get": {
+        "description": "",
+        "parameters": [
           {
             "name": "Authorization",
             "in": "header",
@@ -932,37 +971,6 @@
           {
             "name": "Authorization",
             "in": "header",
-            "type": "string"
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK"
-          },
-          "401": {
-            "description": "Unauthorized"
-          },
-          "403": {
-            "description": "Forbidden"
-          },
-          "500": {
-            "description": "Internal Server Error"
-          }
-        }
-      }
-    },
-    "/api/eventos/mis": {
-      "get": {
-        "description": "",
-        "parameters": [
-          {
-            "name": "Authorization",
-            "in": "header",
-            "type": "string"
-          },
-          {
-            "name": "estado",
-            "in": "query",
             "type": "string"
           }
         ],

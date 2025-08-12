@@ -9,7 +9,8 @@ const pendingUserSchema = new mongoose.Schema({
     enum: ['estudiante', 'docente', 'admin'],
     default: 'estudiante',
   },
-  codigoVerificacion: { type: String, required: true },
+  // El código de verificación se genera cuando se solicita
+  codigoVerificacion: { type: String },
   expiresAt: {
     type: Date,
     default: Date.now,

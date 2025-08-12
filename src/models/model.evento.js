@@ -9,7 +9,8 @@ const eventoSchema = new mongoose.Schema({
   tipo: {
     type: String,
     enum: ['seminario', 'clase', 'conferencia'],
-    required: [true, 'El tipo de evento es obligatorio']
+    required: [true, 'El tipo de evento es obligatorio'],
+    default: 'seminario'
   },
   fechaInicio: {
     type: Date,
@@ -56,7 +57,7 @@ const eventoSchema = new mongoose.Schema({
   },
   estado: {
     type: String,
-    enum: ['activo', 'finalizado', 'cancelado'],
+    enum: ['activo', 'finalizado', 'cancelado', 'En proceso'],
     default: 'activo'
   },
   reportePDF: { type: String },

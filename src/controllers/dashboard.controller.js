@@ -40,6 +40,7 @@ exports.getEventMetrics = async (req, res) => {
   }
 };
 
+// Obtener métricas generales del dashboard
 exports.getDashboardOverview = async (req, res) => {
   try {
     const now = new Date();
@@ -48,19 +49,39 @@ exports.getDashboardOverview = async (req, res) => {
     prevMonthStart.setMonth(prevMonthStart.getMonth() - 1);
     const prevMonthEnd = new Date(startOfMonth.getTime() - 1);
 
-    const [totalEventos, eventosMes, eventosPrevMes, eventosActivos, totalAsistencias] = await Promise.all([
-      Evento.countDocuments(),
-      Evento.countDocuments({ createdAt: { $gte: startOfMonth } }),
-      Evento.countDocuments({ createdAt: { $gte: prevMonthStart, $lte: prevMonthEnd } }),
-      Evento.countDocuments({ estado: 'activo' }),
-      Asistencia.countDocuments()
+    // Filtro de eventos por rol
+    const isDocente = req.user.rol === 'docente';
+    const eventFilter = isDocente ? { creadorId: req.user.id } : {};
+
+    // Si es docente, obtener eventos asociados
+    let asistenciaMatch = {};
+    if (isDocente) {
+      const eventIds = await Evento.find(eventFilter).distinct('_id');
+      asistenciaMatch = { evento: { $in: eventIds } };
+    }
+
+    // Obtener métricas generales
+    const [
+      totalEventos,
+      eventosMes,
+      eventosPrevMes,
+      eventosActivos,
+      totalAsistencias
+    ] = await Promise.all([
+      Evento.countDocuments(eventFilter),
+      Evento.countDocuments({ ...eventFilter, createdAt: { $gte: startOfMonth } }),
+      Evento.countDocuments({ ...eventFilter, createdAt: { $gte: prevMonthStart, $lte: prevMonthEnd } }),
+      Evento.countDocuments({ ...eventFilter, estado: 'activo' }),
+      Asistencia.countDocuments(asistenciaMatch)
     ]);
 
-    const cambioEventosMes = eventosPrevMes ? ((eventosMes - eventosPrevMes) * 100) / eventosPrevMes : null;
+    const cambioEventosMes = eventosPrevMes
+      ? ((eventosMes - eventosPrevMes) * 100) / eventosPrevMes
+      : null;
 
+    // Rango semanal actual y anterior
     const startOfWeek = new Date(now);
-    const day = startOfWeek.getDay();
-    const diffToMonday = (day + 6) % 7;
+    const diffToMonday = (startOfWeek.getDay() + 6) % 7;
     startOfWeek.setDate(startOfWeek.getDate() - diffToMonday);
     startOfWeek.setHours(0, 0, 0, 0);
 
@@ -68,48 +89,108 @@ exports.getDashboardOverview = async (req, res) => {
     prevWeekStart.setDate(prevWeekStart.getDate() - 7);
     const prevWeekEnd = new Date(startOfWeek.getTime() - 1);
 
+    // Asistencias semanales
     const [asistenciasSemana, asistenciasSemanaPrev] = await Promise.all([
-      Asistencia.countDocuments({ createdAt: { $gte: startOfWeek } }),
-      Asistencia.countDocuments({ createdAt: { $gte: prevWeekStart, $lte: prevWeekEnd } })
+      Asistencia.countDocuments({ ...asistenciaMatch, createdAt: { $gte: startOfWeek } }),
+      Asistencia.countDocuments({ ...asistenciaMatch, createdAt: { $gte: prevWeekStart, $lte: prevWeekEnd } })
     ]);
 
-    const cambioAsistenciasSemana = asistenciasSemanaPrev ? ((asistenciasSemana - asistenciasSemanaPrev) * 100) / asistenciasSemanaPrev : null;
+    const cambioAsistenciasSemana = asistenciasSemanaPrev
+      ? ((asistenciasSemana - asistenciasSemanaPrev) * 100) / asistenciasSemanaPrev
+      : null;
 
+    // Promedio de asistencia en porcentaje
     const promedioAgg = await Asistencia.aggregate([
+      { $match: asistenciaMatch },
       { $group: { _id: '$evento', total: { $sum: 1 } } },
-      { $lookup: { from: 'eventos', localField: '_id', foreignField: '_id', as: 'evento' } },
+      {
+        $lookup: {
+          from: 'eventos',
+          localField: '_id',
+          foreignField: '_id',
+          as: 'evento'
+        }
+      },
       { $unwind: '$evento' },
-      { $project: { porcentaje: { $cond: [ { $gt: ['$evento.capacidadMaxima', 0] }, { $divide: ['$total', '$evento.capacidadMaxima'] }, null ] } } },
+      {
+        $project: {
+          porcentaje: {
+            $cond: [
+              { $gt: ['$evento.capacidadMaxima', 0] },
+              { $divide: ['$total', '$evento.capacidadMaxima'] },
+              null
+            ]
+          }
+        }
+      },
       { $match: { porcentaje: { $ne: null } } }
     ]);
 
-    const promedioAsistenciaPorcentaje = promedioAgg.length ? (promedioAgg.reduce((acc, v) => acc + v.porcentaje, 0) / promedioAgg.length) * 100 : 0;
+    const promedioAsistenciaPorcentaje = promedioAgg.length
+      ? (promedioAgg.reduce((acc, v) => acc + v.porcentaje, 0) / promedioAgg.length) * 100
+      : 0;
 
+    // Eventos por tipo
     const tipoAgg = await Evento.aggregate([
+      { $match: eventFilter },
       { $group: { _id: '$tipo', total: { $sum: 1 } } }
     ]);
-    const eventosPorTipo = tipoAgg.map(t => ({ tipo: t._id, porcentaje: totalEventos ? (t.total * 100) / totalEventos : 0 }));
 
+    const eventosPorTipo = tipoAgg.map(t => ({
+      tipo: t._id,
+      porcentaje: totalEventos ? (t.total * 100) / totalEventos : 0
+    }));
+
+    // Tendencia mensual
     const tendenciaAgg = await Asistencia.aggregate([
-      { $group: { _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } }, total: { $sum: 1 } } },
+      { $match: asistenciaMatch },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m', date: '$createdAt' } },
+          total: { $sum: 1 }
+        }
+      },
       { $sort: { _id: 1 } }
     ]);
-    const tendenciaAsistenciaMensual = tendenciaAgg.map(m => ({ mes: m._id, total: m.total }));
 
+    const tendenciaAsistenciaMensual = tendenciaAgg.map(m => ({
+      mes: m._id,
+      total: m.total
+    }));
+
+    // Asistencia por día de la semana
     const diasSemanaAgg = await Asistencia.aggregate([
+      { $match: asistenciaMatch },
       { $group: { _id: { $dayOfWeek: '$createdAt' }, total: { $sum: 1 } } }
     ]);
-    const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
-    const asistenciaPorDia = diasSemanaAgg.map(d => ({ dia: dias[d._id - 1], total: d.total }));
 
+    const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+    const asistenciaPorDia = diasSemanaAgg.map(d => ({
+      dia: dias[d._id - 1],
+      total: d.total
+    }));
+
+    // Asistencia por hora
     const horaAgg = await Asistencia.aggregate([
+      { $match: asistenciaMatch },
       { $group: { _id: { $hour: '$createdAt' }, total: { $sum: 1 } } },
       { $sort: { _id: 1 } }
     ]);
-    const asistenciaPorHora = horaAgg.map(h => ({ hora: h._id, total: h.total }));
 
-    const actividadReciente = await Evento.find({ estado: 'activo' }, 'nombre fechaInicio fechaFin createdAt').sort({ createdAt: -1 }).lean();
+    const asistenciaPorHora = horaAgg.map(h => ({
+      hora: h._id,
+      total: h.total
+    }));
 
+    // Actividad reciente
+    const actividadReciente = await Evento.find(
+      { ...eventFilter, estado: 'activo' },
+      'nombre fechaInicio fechaFin createdAt'
+    )
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Respuesta final
     res.json({
       totalEventos,
       cambioEventosMes,
@@ -124,6 +205,9 @@ exports.getDashboardOverview = async (req, res) => {
       actividadReciente
     });
   } catch (err) {
-    res.status(500).json({ error: 'Error al obtener estadisticas', message: err.message });
+    res.status(500).json({
+      error: 'Error al obtener estadísticas',
+      message: err.message
+    });
   }
 };

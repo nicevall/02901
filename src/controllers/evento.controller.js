@@ -2,6 +2,8 @@ const Evento = require('../models/model.evento');
 const { incrementMetric } = require("../utils/dashboard.metrics");
 const EventMetric = require('../models/eventMetric.model');
 const { generateEventPDFBase64 } = require('../utils/pdf.util');
+const Asistencia = require('../models/asistencia.model');
+const { crearGraficoBarras, generarPDFEvento } = require('../utils/eventReport.util');
 
 // Crear un nuevo evento (solo docentes)
 exports.crearEvento = async (req, res) => {
@@ -219,7 +221,6 @@ exports.finalizarEvento = async (req, res) => {
     evento.estado = 'finalizado';
 
     const metrics = await require('../models/dashboard.model').find().lean();
-    const { generateEventPDFBase64 } = require('../utils/pdf.util');
     const pdfBase64 = await generateEventPDFBase64(evento.toObject(), metrics);
 
     if (!pdfBase64) {
@@ -246,5 +247,39 @@ exports.obtenerMisEventos = async (req, res) => {
     res.status(200).json(eventos);
   } catch (err) {
     res.status(500).json({ mensaje: 'Error al obtener mis eventos', error: err.message });
+  }
+};
+
+// Generar PDF del evento con métricas y gráficos
+exports.generarReporteEvento = async (req, res) => {
+  try {
+    const evento = await Evento.findById(req.params.id).lean();
+    if (!evento) {
+      return res.status(404).json({ mensaje: 'Evento no encontrado' });
+    }
+
+    const totalAsistentes = await Asistencia.countDocuments({ evento: evento._id });
+    const promedioAsistencia = evento.duracionDias
+      ? totalAsistentes / evento.duracionDias
+      : totalAsistentes;
+
+    const grafico = await crearGraficoBarras({
+      labels: ['Asistentes', 'Promedio'],
+      values: [totalAsistentes, promedioAsistencia],
+      label: 'Asistencia'
+    });
+
+    const pdfBuffer = await generarPDFEvento({
+      evento,
+      totalAsistentes,
+      promedioAsistencia,
+      grafico
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'attachment; filename=evento-reporte.pdf');
+    res.send(pdfBuffer);
+  } catch (err) {
+    res.status(500).json({ mensaje: 'Error al generar el reporte', error: err.message });
   }
 };
