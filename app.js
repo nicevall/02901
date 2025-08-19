@@ -18,6 +18,7 @@ const justificacionRoutes = require('./src/routes/justificaciones.routes');
 const testRoutes = require('./src/routes/test.routes');
 
 require('./src/cron/asistenciaCron');
+require('./src/cron/eventoCron');
 
 const { initWebSocket } = require('./src/config/websocket');
 

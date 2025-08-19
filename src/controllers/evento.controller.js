@@ -92,19 +92,20 @@ exports.crearEvento = async (req, res) => {
 // Obtener todos los eventos
 exports.obtenerEventos = async (req, res) => {
   try {
-    const eventos = await Evento.find({ estado: 'activo' }).populate('creadorId', 'nombre email rol');
+    // ✅ Sin filtro, trae todos los eventos
+    const eventos = await Evento.find()
+      .populate('creadorId', 'nombre email rol');
+
     res.status(200).json(eventos);
   } catch (err) {
-    console.error('Error al obtener eventos:', err); // imprime el error completo en consola
+    console.error('Error al obtener eventos:', err);
     res.status(500).json({
       mensaje: 'Error al obtener eventos',
       error: err.message,
-      stack: err.stack, // información detallada para debugging
+      stack: err.stack,
     });
-
-    }
+  }
 };
-
 // Obtener evento por ID
 exports.obtenerEventoPorId = async (req, res) => {
   try {
